@@ -2,5 +2,9 @@
 .DS_Store
 .vs-code
 
+.php_cs.cache
+.phpunit.result.cache
 /vendor/
 /composer.lock
+
+/build
