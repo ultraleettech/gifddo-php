@@ -1,0 +1,24 @@
+{
+    "name": "gifddo/client",
+    "description": "Gifddo payment processing client library",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Rene Aavik",
+            "email": "renx81@gmail.com"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "Gifddo\\": "src/"
+        }
+    },
+    "minimum-stability": "stable",
+    "require": {
+        "guzzlehttp/guzzle": "^7.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9.3"
+    }
+}
