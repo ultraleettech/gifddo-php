@@ -96,7 +96,7 @@ class Client
                 'VK_MSG' => "{$data['email']}|{$data['first_name']}|{$data['last_name']}",
                 'VK_RETURN' => $data['return_url'],
                 'VK_CANCEL' => $data['cancel_url'] ?? $data['return_url'],
-                'VK_DATETIME' => date('Y-m-d') . 'T' . date('H:i:sO'),
+                'VK_DATETIME' => Helpers::dateString(),
             ];
         } catch (Throwable $exception) {
             $params = [];
@@ -120,6 +120,45 @@ class Client
     {
         openssl_sign(Helpers::pack($params), $signature, $this->privateKey, \OPENSSL_ALGO_SHA1);
         return base64_encode($signature);
+    }
+
+    /**
+     * Verifies signature against response parameters.
+     *
+     * @param array  $params
+     * @param string $signature
+     *
+     * @return bool
+     */
+    public function verify(array $params, string $signature): bool
+    {
+        $params = ($params['VK_SERVICE'] === static::SUCCESSFUL_RESPONSE_CODE) ? [
+            'VK_SERVICE' => $params['VK_SERVICE'],
+            'VK_VERSION' => $params['VK_VERSION'],
+            'VK_SND_ID' => $params['VK_SND_ID'],
+            'VK_REC_ID' => $params['VK_REC_ID'],
+            'VK_STAMP' => $params['VK_STAMP'],
+            'VK_T_NO' => $params['VK_T_NO'],
+            'VK_AMOUNT' => $params['VK_AMOUNT'],
+            'VK_CURR' => $params['VK_CURR'],
+            'VK_REC_ACC' => $params['VK_REC_ACC'],
+            'VK_REC_NAME' => $params['VK_REC_NAME'],
+            'VK_SND_ACC' => $params['VK_SND_ACC'],
+            'VK_SND_NAME' => $params['VK_SND_NAME'],
+            'VK_REF' => $params['VK_REF'],
+            'VK_MSG' => $params['VK_MSG'],
+            'VK_T_DATETIME' => $params['VK_T_DATETIME'],
+        ] : [
+            'VK_SERVICE' => $params['VK_SERVICE'],
+            'VK_VERSION' => $params['VK_VERSION'],
+            'VK_SND_ID' => $params['VK_SND_ID'],
+            'VK_REC_ID' => $params['VK_REC_ID'],
+            'VK_STAMP' => $params['VK_STAMP'],
+            'VK_REF' => $params['VK_REF'],
+            'VK_MSG' => $params['VK_MSG'],
+        ];
+        $pack = Helpers::pack($params);
+        return openssl_verify($pack, base64_decode($signature), $this->getPublicKey(), \OPENSSL_ALGO_SHA1) === 1;
     }
 
     /**

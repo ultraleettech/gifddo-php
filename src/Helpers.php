@@ -37,4 +37,12 @@ class Helpers
         }
         return $result;
     }
+
+    /**
+     * @return string
+     */
+    public static function dateString(): string
+    {
+        return date('Y-m-d') . 'T' . date('H:i:sO');
+    }
 }
