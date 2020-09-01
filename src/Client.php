@@ -223,7 +223,7 @@ class Client
      *
      * @return string
      */
-    private function getPublicKey(): string
+    public function getPublicKey(): string
     {
         if (!isset($this->publicKey)) {
             $mode = $this->getMode();

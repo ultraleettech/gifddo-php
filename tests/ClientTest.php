@@ -4,11 +4,14 @@ namespace Gifddo\Tests;
 
 use Gifddo\Client;
 use Gifddo\Helpers;
+use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Psr7\Response;
 use PHPUnit\Framework\TestCase;
 use GuzzleHttp\Client as Guzzle;
 use Gifddo\Exceptions\ClientException;
+use Gifddo\Exceptions\RequestException;
 use Gifddo\Exceptions\UndefinedParameterException;
+use GuzzleHttp\Exception\RequestException as GuzzleRequestException;
 
 class ClientTest extends TestCase
 {
@@ -128,6 +131,40 @@ class ClientTest extends TestCase
         $client->request([]);
     }
 
+    public function testRequestThrowsWhenCaCertNotFound()
+    {
+        $client = new Client('TEST', self::$privateKey, true);
+
+        $guzzle = $this->getMockBuilder(Guzzle::class)
+            ->onlyMethods(['request'])
+            ->getMock();
+
+        $guzzle->expects(self::once())
+            ->method('request')
+            ->willThrowException(new GuzzleRequestException('cURL error 60', new Request('post', '')));
+
+        $this->expectException(RequestException::class);
+        $client->setGuzzle($guzzle);
+        $client->request([]);
+    }
+
+    public function testRequestThrowsWhenNoRedirectionInApiResponse()
+    {
+        $client = new Client('TEST', self::$privateKey, true);
+
+        $guzzle = $this->getMockBuilder(Guzzle::class)
+            ->onlyMethods(['request'])
+            ->getMock();
+
+        $guzzle->expects(self::once())
+            ->method('request')
+            ->willReturn(new Response());
+
+        $this->expectException(ClientException::class);
+        $client->setGuzzle($guzzle);
+        $client->request([]);
+    }
+
     public function testVerifySuccessfulResponseWithCorrectMac()
     {
         $params = $testParams = [
@@ -198,5 +235,23 @@ class ClientTest extends TestCase
         $client = new Client('TEST', self::$privateKey, true);
         $client->setPublicKey(static::$gifddoPublicKey);
         self::assertFalse($client->verify($params, base64_encode($signature)));
+    }
+
+    public function testGetPublicKeyReturnsFileContents()
+    {
+        $testKey = file_get_contents(__DIR__ . '/../keys/gifddo-test.pem');
+        $liveKey = file_get_contents(__DIR__ . '/../keys/gifddo-live.pem');
+
+        $client = new Client('TEST', self::$privateKey, true);
+        self::assertSame($testKey, $client->getPublicKey());
+
+        $client = new Client('TEST', self::$privateKey);
+        self::assertSame($liveKey, $client->getPublicKey());
+    }
+
+    public function testGetGuzzle()
+    {
+        $client = new Client('TEST', self::$privateKey, true);
+        self::assertInstanceOf(Guzzle::class, $client->getGuzzle());
     }
 }
