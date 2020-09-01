@@ -113,6 +113,23 @@ class ClientTest extends TestCase
         self::assertContains("Location: $url", xdebug_get_headers());
     }
 
+    public function testRequestReturnsUrlIfSecondArgumentIsTrue()
+    {
+        $client = new Client('TEST', self::$privateKey, true);
+
+        $url = $client->getUrl() . '/test';
+        $response = new Response(200, ['Location' => $url]);
+
+        $guzzle = $this->createStub(Guzzle::class);
+        $guzzle->method('post')
+            ->willReturn($response);
+
+        $client->setGuzzle($guzzle);
+        $location = $client->request([], true);
+
+        self::assertSame($url, $location);
+    }
+
     public function testRequestThrowsWhenHeadersAlreadySent()
     {
         $client = new Client('TEST', self::$privateKey, true);

@@ -164,14 +164,15 @@ class Client
     /**
      * Make a request to the Guzzle API endpoint and redirect the browser to the payment page.
      *
-     * @param array $params
+     * @param array $params Array returned by initiate().
+     * @param bool  $return Set to TRUE to return the redirect location instead of redirecting automatically.
      *
-     * @return void
+     * @return string|null
      *
-     * @throws RequestException
      * @throws ClientException
+     * @throws RequestException
      */
-    public function request(array $params): void
+    public function request(array $params, bool $return = false): ?string
     {
         try {
             $client = $this->getGuzzle();
@@ -182,10 +183,16 @@ class Client
         } catch (GuzzleException $e) {
             throw new RequestException($e->getMessage(), $e->getCode(), $e);
         }
+
         $url = $response->getHeader('Location')[0] ?? null;
         if (!$url) {
             throw new ClientException("Guzzle API didn't return an URL to the payment page.");
         }
+
+        if ($return) {
+            return $url;
+        }
+
         try {
             header("Location: $url");
         } catch (Throwable $exception) {
@@ -193,6 +200,7 @@ class Client
                 throw new ClientException('Gifddo API request needs to be performed before HTTP request headers are sent.');
             }
         }
+        return null;
     }
 
     /**
