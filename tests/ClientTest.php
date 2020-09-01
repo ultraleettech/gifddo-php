@@ -49,6 +49,21 @@ class ClientTest extends TestCase
         $client->initiate([]);
     }
 
+    public function testInitiateThrowsWhenEmptyKey()
+    {
+        $client = new Client('TEST', '', true);
+
+        $this->expectException(ClientException::class);
+        $client->initiate([
+            'amount' => 10,
+            'reference' => 1337,
+            'email' => 'test@test.com',
+            'first_name' => 'John',
+            'last_name' => 'Smith',
+            'return_url' => '',
+        ]);
+    }
+
     public function testInitiateWithNumericAmountAndRef()
     {
         $client = new Client('TEST', static::$privateKey, true);

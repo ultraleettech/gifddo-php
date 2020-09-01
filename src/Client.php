@@ -81,6 +81,7 @@ class Client
      * @return array            Array of parameters to pass to the request() method.
      *
      * @throws UndefinedParameterException
+     * @throws ClientException
      */
     public function initiate(array $data): array
     {
@@ -115,10 +116,15 @@ class Client
      * @param array $params
      *
      * @return string
+     * @throws ClientException
      */
     private function sign(array $params): string
     {
-        openssl_sign(Helpers::pack($params), $signature, $this->privateKey, \OPENSSL_ALGO_SHA1);
+        try {
+            openssl_sign(Helpers::pack($params), $signature, $this->privateKey, \OPENSSL_ALGO_SHA1);
+        } catch (Throwable $exception) {
+            throw new ClientException("Error trying to sign message: " . $exception->getMessage(), $exception->getCode());
+        }
         return base64_encode($signature);
     }
 
