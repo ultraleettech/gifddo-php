@@ -5,6 +5,10 @@ declare(strict_types=1);
 namespace Gifddo;
 
 use Throwable;
+use GuzzleHttp\Client as Guzzle;
+use Gifddo\Exceptions\ClientException;
+use Gifddo\Exceptions\RequestException;
+use GuzzleHttp\Exception\GuzzleException;
 use Gifddo\Exceptions\UndefinedParameterException;
 
 /**
@@ -39,6 +43,11 @@ class Client
     private $publicKey;
 
     /**
+     * @var Guzzle
+     */
+    private $guzzle;
+
+    /**
      * Client constructor.
      *
      * @param string $merchantId
@@ -69,9 +78,9 @@ class Client
      *                          the value of $return_url.
      * }
      *
-     * @return array
+     * @return array            Array of parameters to pass to the request() method.
      *
-     * @throws UndefinedParameterException|Throwable
+     * @throws UndefinedParameterException
      */
     public function initiate(array $data): array
     {
@@ -96,10 +105,8 @@ class Client
             }
         }
         $params['VK_MAC'] = $this->sign($params);
-        return [
-            'url' => $this->getUrl(),
-            'params' => $params,
-        ];
+
+        return $params;
     }
 
     /**
@@ -113,6 +120,63 @@ class Client
     {
         openssl_sign(Helpers::pack($params), $signature, $this->privateKey, \OPENSSL_ALGO_SHA1);
         return base64_encode($signature);
+    }
+
+    /**
+     * Make a request to the Guzzle API endpoint and redirect the browser to the payment page.
+     *
+     * @param array $params
+     *
+     * @return void
+     *
+     * @throws RequestException
+     * @throws ClientException
+     */
+    public function request(array $params): void
+    {
+        try {
+            $client = $this->getGuzzle();
+            $response = $client->post($this->getUrl(), [
+                'allow_redirects' => false,
+                'form_params' => $params,
+            ]);
+        } catch (GuzzleException $e) {
+            throw new RequestException($e->getMessage(), $e->getCode(), $e);
+        }
+        $url = $response->getHeader('Location')[0] ?? null;
+        if (!$url) {
+            throw new ClientException("Guzzle API didn't return an URL to the payment page.");
+        }
+        try {
+            header("Location: $url");
+        } catch (Throwable $exception) {
+            if (preg_match('/headers already sent/', $exception->getMessage())) {
+                throw new ClientException('Gifddo API request needs to be performed before HTTP request headers are sent.');
+            }
+        }
+    }
+
+    /**
+     * Get Guzzle client.
+     *
+     * @return Guzzle
+     */
+    public function getGuzzle(): Guzzle
+    {
+        if (!isset($this->guzzle)) {
+            $this->guzzle = new Guzzle();
+        }
+        return $this->guzzle;
+    }
+
+    /**
+     * Set Guzzle client.
+     *
+     * @param Guzzle $guzzle
+     */
+    public function setGuzzle(Guzzle $guzzle): void
+    {
+        $this->guzzle = $guzzle;
     }
 
     /**
@@ -154,7 +218,7 @@ class Client
      *
      * @return string
      */
-    private function getUrl()
+    public function getUrl()
     {
         return $this->isTest ? self::TEST_URL : self::LIVE_URL;
     }
