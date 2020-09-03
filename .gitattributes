@@ -1,2 +1,10 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Exclude from package
+.* export-ignore
+Makefile export-ignore
+phpstan* export-ignore
+phpunit.xml export-ignore
+psalm.* export-ignore
+tests/ export-ignore
