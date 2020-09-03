@@ -35,7 +35,7 @@ class Helpers
     {
         return array_reduce(
             $params,
-            static function ($memo, $value) {
+            static function ($memo, string $value) {
                 return $memo . str_pad((string) strlen($value), 3, '0', \STR_PAD_LEFT) . $value;
             },
             ''
